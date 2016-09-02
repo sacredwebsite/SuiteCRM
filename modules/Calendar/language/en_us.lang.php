@@ -42,6 +42,13 @@ if(!defined('sugarEntry') || !sugarEntry) die('Not A Valid Entry Point');
 $mod_strings = array (
 
 	'LBL_MODULE_NAME' => 'Calendar',
+	'LBL_AGENDADAY' => 'Day',
+	'LBL_AGENDAWEEK' => 'Week',
+	'LBL_SHAREDWEEK' => 'Shared Week',
+	'LBL_SHAREDMONTH' => 'Shared Month',
+
+
+	'LBL_MODULE_NAME' => 'Calendar',
 	'LBL_MODULE_TITLE' => 'Calendar',
 	'LNK_NEW_CALL' => 'Schedule Call',
 	'LNK_NEW_MEETING' => 'Schedule Meeting',
@@ -55,9 +62,9 @@ $mod_strings = array (
 	'LNK_IMPORT_MEETINGS' => 'Import Meetings',
 	'LNK_IMPORT_TASKS' => 'Import Tasks',
 	'LBL_MONTH' => 'Month',
-	'LBL_DAY' => 'Day',
+	'LBL_AGENDADAY' => 'Day',
 	'LBL_YEAR' => 'Year',
-	'LBL_WEEK' => 'Week',
+	'LBL_AGENDAWEEK' => 'Week',
 	'LBL_PREVIOUS_MONTH' => 'Previous Month',
 	'LBL_PREVIOUS_DAY' => 'Previous Day',
 	'LBL_PREVIOUS_YEAR' => 'Previous Year',
@@ -128,6 +135,7 @@ $mod_strings = array (
 	'LBL_SETTINGS_CALLS_SHOW' => 'Show Calls:',
 	'LBL_SETTINGS_TASKS_SHOW' => 'Show Tasks:',
     'LBL_SETTINGS_COMPLETED_SHOW' => 'Show Completed Meetings, Calls and Tasks:',
+    'LBL_SETTINGS_DISPLAY_SHARED_CALENDAR_SEPARATE' => 'Shared Calendar Separate:',
 
 	'LBL_SAVE_BUTTON' => 'Save',
 	'LBL_DELETE_BUTTON' => 'Delete',
@@ -158,6 +166,8 @@ $mod_strings = array (
 	'ERR_YEAR_BETWEEN' => 'Sorry, calendar cannot handle the year you requested<br>Year must be between 1970 and 2037',
 	'ERR_NEIGHBOR_DATE' => 'get_neighbor_date_str: not defined for this view',
     'LBL_NO_ITEMS_MOBILE' => 'Your calendar is clear for the week.',
+    'LBL_GENERAL_SETTINGS' => 'General Settings',
+    'LBL_COLOR_SETTINGS' => 'Colour Settings',
 
 );
 

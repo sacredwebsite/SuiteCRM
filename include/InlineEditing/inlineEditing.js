@@ -41,7 +41,12 @@ buildEditField();
 //Global Variables.
 
 var inlineEditSaveButtonImg = "themes/SuiteR/images/inline_edit_save_icon.svg";
-var inlineEditIcon = $("#inline_edit_icon")[0].outerHTML;
+if($("#inline_edit_icon").length) {
+    var inlineEditIcon = $("#inline_edit_icon")[0].outerHTML;
+} else {
+    var inlineEditIcon = "";
+}
+
 var view = action_sugar_grp1;
 var currentModule = module_sugar_grp1;
 
@@ -92,12 +97,15 @@ function buildEditField(){
             }
         }
     });
-    $(".inlineEdit").dblclick(function(e) {
+
+
+    var onInlineEditDblClick = function(elem, e) {
+        var _this = elem;
         e.preventDefault();
-        //depending on what view you are using will find the id,module,type of field, and field name from the view
+        // depending on what view you are using will find the id,module,type of field, and field name from the view
         if(view == "DetailView"){
-            var field = $(this).attr( "field" );
-            var type = $(this).attr( "type" );
+            var field = $(_this).attr( "field" );
+            var type = $(_this).attr( "type" );
 
             if(currentModule){
                 var module = currentModule;
@@ -107,10 +115,10 @@ function buildEditField(){
 
             var id = $("input[name=record]").attr( "value" );
         }else{
-            var field = $(this).attr( "field" );
-            var type = $(this).attr( "type" );
+            var field = $(_this).attr( "field" );
+            var type = $(_this).attr( "type" );
             var module = $("#displayMassUpdate input[name=module]").val();
-            var id = $(this).closest('tr').find('[type=checkbox]').attr( "value" );
+            var id = $(_this).closest('tr').find('[type=checkbox]').attr( "value" );
         }
 
         //If we find all the required variables to do inline editing.
@@ -123,19 +131,19 @@ function buildEditField(){
 
             //If we have the field html append it to the div we clicked.
             if(html){
-                $(this).html(validation + "<form name='EditView' id='EditView'><div id='inline_edit_field'>" + html + "</div><a id='inlineEditSaveButton'></a></form>");
+                $(_this).html(validation + "<form name='EditView' id='EditView'><div id='inline_edit_field'>" + html + "</div><a id='inlineEditSaveButton'></a></form>");
                 $("#inlineEditSaveButton").load(inlineEditSaveButtonImg);
                 //If the field is a relate field we will need to retrieve the extra js required to make the field work.
                 if(type == "relate" || type == "parent") {
                     var relate_js = getRelateFieldJS(field, module, id);
-                    $(this).append(relate_js);
-                    SUGAR.util.evalScript($(this).html());
+                    $(_this).append(relate_js);
+                    SUGAR.util.evalScript($(_this).html());
                     //Needs to be called to enable quicksearch/typeahead functionality on the field.
                     enableQS(true);
                 }
 
                 //Add the active class so we know which td we are editing as they all have the inlineEdit class.
-                $(this).addClass("inlineEditActive");
+                $(_this).addClass("inlineEditActive");
 
                 //Put the cursor in the field if possible.
                 $("#" + field).focus();
@@ -146,6 +154,7 @@ function buildEditField(){
                 }
 
                 //We can only edit one field at a time currently so turn off the on dblclick event
+                $(".inlineEdit").off('click');
                 $(".inlineEdit").off('dblclick');
 
                 //Call the click away function to handle if the user has clicked off the field, if they have it will close the form.
@@ -156,8 +165,31 @@ function buildEditField(){
 
             }
         }
+    };
 
+    var touchtime = 0;
+    $('.inlineEdit').on('click', function(e) {
+        if(touchtime == 0) {
+            //set first click
+            touchtime = new Date().getTime();
+        } else {
+            //compare first click to this click and see if they occurred within double click threshold
+            if(((new Date().getTime())-touchtime) < 800) {
+                //double click occurred
+                //alert("double clicked");
+                touchtime = 0;
+                onInlineEditDblClick(this, e);
+            } else {
+                //not a double click so set as a new first click
+                touchtime = new Date().getTime();
+            }
+        }
     });
+
+    $(".inlineEdit").dblclick(function(e) {
+        onInlineEditDblClick(this, e);
+    });
+
 }
 
 /**
@@ -172,7 +204,7 @@ function validateFormAndSave(field,id,module,type){
         var valid_form = check_form("EditView");
         if(valid_form){
             handleSave(field, id, module, type)
-            $(document).off('click');
+            clickListenerActive = false;
         }else{
             return false
         };
@@ -197,17 +229,42 @@ function validateFormAndSave(field,id,module,type){
  * @param module - the module we are editing
  */
 
+var ie_field, ie_id, ie_module, ie_type, ie_message_field;
+var clickListenerActive = false;
 function clickedawayclose(field,id,module, type){
-    $(document).on('click', function (e) {
+    // Fix for issue #373 get name from system field name.
+    message_field = 'LBL_' + field.toUpperCase();
+    message_field = SUGAR.language.get(module, message_field);
 
-        if(!$(e.target).parents().is(".inlineEditActive, .cal_panel") && !$(e.target).hasClass("inlineEditActive")){
-            var output_value = loadFieldHTMLValue(field,id,module);
+    // Fix for issue #373 remove ':'
+    var last_charachter = message_field.substring(message_field.length, message_field.length - 1);
+    if (':'.toUpperCase() === last_charachter.toUpperCase()) {
+        message_field = message_field.substring(0, message_field.length - 1);
+    }
+    ie_field = field;
+    ie_id = id;
+    ie_module = module;
+    ie_type = type;
+    ie_message_field = message_field;
+    clickListenerActive = true;
+}
+$(document).on('click', function (e) {
+    if(clickListenerActive) {
+        var field = ie_field;
+        var id = ie_id;
+        var module = ie_module;
+        var type = ie_type;
+        var message_field = ie_message_field;
+        if (!$(e.target).parents().is(".inlineEditActive, .cal_panel") && !$(e.target).hasClass("inlineEditActive")) {
+            var output_value = loadFieldHTMLValue(field, id, module);
             var user_value = getInputValue(field, type);
-            if(user_value != output_value) {
-                var r = confirm("You have clicked away from the field you were editing without saving it. Click ok if you're happy to lose your change, or cancel if you would like to continue editing " + field);
-                if(r == true) {
+            // Fix for issue #373 strip HTML tags for correct comparison
+            var output_value_compare = $(output_value).text();
+            if (user_value != output_value_compare) {
+                var r = confirm(SUGAR.language.translate('app_strings', 'LBL_CONFIRM_CANCEL_INLINE_EDITING') + message_field);
+                if (r == true) {
                     var output = setValueClose(output_value);
-                    $(document).off('click');
+                    clickListenerActive = false;
                 } else {
                     $("#" + field).focus();
                     e.preventDefault();
@@ -215,13 +272,11 @@ function clickedawayclose(field,id,module, type){
             } else {
                 // user hasn't changed value so can close field without warning them first
                 var output = setValueClose(output_value);
-                $(document).off('click');
+                clickListenerActive = false;
             }
         }
-
-    });
-}
-
+    }
+});
 
 /**
  * Depending on what type of field we are editing the parts of the field may differ and need different jquery to pickup the values
@@ -250,7 +305,7 @@ function getInputValue(field,type){
                 break;
             case 'enum':
                 if($('#'+ field + ' :selected').text().length > 0){
-                    return $('#'+ field + ' :selected').text();
+                    return $('#'+ field + ' :selected').val();
                 }
                 break;
             case 'datetime':
@@ -281,6 +336,11 @@ function getInputValue(field,type){
                    return "on";
                 }else{
                     return "off";
+                }
+                break;
+            case 'radioenum':
+                if($('input[name='+field+']:checked').val()){
+                    return $('input[name='+field+']:checked').val();
                 }
                 break;
             default:
@@ -465,7 +525,7 @@ function getValidationRules(field,module,id){
     try {
         var validation = JSON.parse(result.responseText);
     } catch(e) {
-        alert("There was an error loading the field. Your session may have timed out. Please log in again to fix this");
+        alert(SUGAR.language.translate('app_strings', 'LBL_LOADING_ERROR_INLINE_EDITING'));
         return false;
     }
 

@@ -44,10 +44,25 @@ require_once('modules/Favorites/Favorites_sugar.php');
 class Favorites extends Favorites_sugar
 {
 
-    function Favorites()
+    public function __construct()
     {
-        parent::Favorites_sugar();
+        parent::__construct();
     }
+
+    /**
+     * @deprecated deprecated since version 7.6, PHP4 Style Constructors are deprecated and will be remove in 7.8, please update your code, use __construct instead
+     */
+    public function Favorites(){
+        $deprecatedMessage = 'PHP4 Style Constructors are deprecated and will be remove in 7.8, please update your code';
+        if(isset($GLOBALS['log'])) {
+            $GLOBALS['log']->deprecated($deprecatedMessage);
+        }
+        else {
+            trigger_error($deprecatedMessage, E_USER_DEPRECATED);
+        }
+        self::__construct();
+    }
+
 
     public function deleteFavorite($id){
         if($id){
@@ -90,7 +105,15 @@ class Favorites extends Favorites_sugar
             $return_array[$i]['item_summary_short'] = to_html(getTrackerSubstring($bean->name));
             $return_array[$i]['id'] = $row['parent_id'];
             $return_array[$i]['module_name'] = $row['parent_type'];
-            $return_array[$i]['image'] = SugarThemeRegistry::current() ->getImage($row['parent_type'],'border="0" align="absmiddle"',null,null,'.gif',$bean->name);
+
+
+            // Change since 7.7 side bar icons can exist in images/sidebar.
+            $sidebarPath = 'themes/'.SugarThemeRegistry::current().'/images/sidebar/modules/';
+            if(file_exists($sidebarPath)) {
+                $return_array[$i]['image'] = SugarThemeRegistry::current()->getImage('sidebar/modules/'.$row['parent_type'],'border="0" align="absmiddle"',null,null,'.gif',$bean->name);
+            } else {
+                $return_array[$i]['image'] = SugarThemeRegistry::current()->getImage($row['parent_type'],'border="0" align="absmiddle"',null,null,'.gif',$bean->name);
+            }
 
             $i++;
         }

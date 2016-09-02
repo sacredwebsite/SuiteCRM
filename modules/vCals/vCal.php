@@ -69,12 +69,27 @@ class vCal extends SugarBean {
     const TAB = "\t";
     const CHARSPERLINE = 75;
 
-	function vCal()
+    public function __construct()
 	{
 
-		parent::SugarBean();
+		parent::__construct();
 		$this->disable_row_level_security = true;
 	}
+
+    /**
+     * @deprecated deprecated since version 7.6, PHP4 Style Constructors are deprecated and will be remove in 7.8, please update your code, use __construct instead
+     */
+    public function vCal(){
+        $deprecatedMessage = 'PHP4 Style Constructors are deprecated and will be remove in 7.8, please update your code';
+        if(isset($GLOBALS['log'])) {
+            $GLOBALS['log']->deprecated($deprecatedMessage);
+        }
+        else {
+            trigger_error($deprecatedMessage, E_USER_DEPRECATED);
+        }
+        self::__construct();
+    }
+
 
 	function get_summary_text()
 	{
@@ -121,23 +136,34 @@ class vCal extends SugarBean {
 	function create_sugar_freebusy($user_bean, $start_date_time, $end_date_time)
 	{
         $ical_array = array();
-		global $DO_USER_TIME_OFFSET,$timedate;
+		global $DO_USER_TIME_OFFSET, $timedate, $current_user;
 
 		$DO_USER_TIME_OFFSET = true;
 		if(empty($GLOBALS['current_user']) || empty($GLOBALS['current_user']->id)) {
 		    $GLOBALS['current_user'] = $user_bean;
 		}
-		// get activities.. queries Meetings and Calls
-		$acts_arr =
-		CalendarActivity::get_activities($user_bean->id,
-			false,
-			$start_date_time,
-			$end_date_time,
-			'freebusy');
+        // get activities.. queries Meetings and Calls
+        $activityList = array("Meetings" => array("showCompleted" => true,"start" =>  "date_start", "end" => "date_end"),
+            "Calls" => array("showCompleted" => true,"start" =>  "date_start", "end" => "date_end"),
+            "Tasks" => array("showCompleted" => true,"start" =>  "date_start", "end" => "date_due"));
 
+        $acts_arr =
+            CalendarActivity::get_activities($activityList , $user_bean->id,
+                false,
+                $start_date_time,
+                $end_date_time,
+                'freebusy');
 		// loop thru each activity, get start/end time in UTC, and return FREEBUSY strings
 		foreach($acts_arr as $act)
 		{
+            if(empty($act->start_time)) {
+                $startTime = $timedate->fromUser($act->sugar_bean->date_start, $user_bean);
+            }
+
+            if(empty($act->end_time)) {
+                $endTime = $timedate->fromUser($act->sugar_bean->date_finish, $user_bean);
+            }
+
             $ID = $act->sugar_bean->id;
 			$startTimeUTC = $act->start_time->format(self::UTC_FORMAT);
 			$endTimeUTC = $act->end_time->format(self::UTC_FORMAT);
@@ -221,14 +247,14 @@ class vCal extends SugarBean {
 
 	// static function:
         // cache vcals
-        function cache_sugar_vcal(&$user_focus)
+        static function cache_sugar_vcal(&$user_focus)
         {
             self::cache_sugar_vcal_freebusy($user_focus);
         }
 
 	// static function:
         // caches vcal for Activities in Sugar database
-        function cache_sugar_vcal_freebusy(&$user_focus)
+        static function cache_sugar_vcal_freebusy(&$user_focus)
         {
             $focus = new vCal();
             // set freebusy members and save
